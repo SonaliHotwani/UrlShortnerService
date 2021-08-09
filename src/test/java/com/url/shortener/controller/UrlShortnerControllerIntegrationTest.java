@@ -7,6 +7,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.annotation.MicronautTest;
 import org.junit.jupiter.api.Test;
 
@@ -31,5 +32,18 @@ class UrlShortnerControllerIntegrationTest {
 
         assertEquals(HttpStatus.OK, response.status());
         assertEquals(new ShortenedUrlResponse("http://urlshortner.com/b", longUrl), response.body());
+    }
+
+    @Test
+    void ShouldReturnBadRequestForInvalidUrl() {
+        final String longUrl = "InvalidUrl";
+        try {
+            client.toBlocking().exchange(
+                    HttpRequest.POST("/shorten/url", "{\"url\": \"" + longUrl + "\"}"),
+                    Argument.of(String.class)
+            );
+        } catch (HttpClientResponseException ex) {
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        }
     }
 }

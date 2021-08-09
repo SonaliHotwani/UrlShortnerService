@@ -8,6 +8,9 @@ import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 @Controller
 public class UrlShortnerController {
 
@@ -18,8 +21,9 @@ public class UrlShortnerController {
     }
 
     @Post(value = "/shorten/url")
-    public HttpResponse<ShortenedUrlResponse> shorten(@Body Request request) {
-        final String longUrl = request.getUrl();
+    public HttpResponse<ShortenedUrlResponse> shorten(@Body Request request) throws MalformedURLException {
+        final URL url = new URL(request.getUrl());
+        final String longUrl = url.toString();
         String shortUrl = service.shorten(longUrl);
         return HttpResponse.ok(new ShortenedUrlResponse(shortUrl, longUrl));
     }
