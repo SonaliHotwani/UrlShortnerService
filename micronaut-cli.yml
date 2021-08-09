@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: long.url.shortener
+---
+testFramework: junit
+sourceLanguage: java

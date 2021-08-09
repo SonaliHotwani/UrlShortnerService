@@ -1,0 +1,9 @@
+---
+micronaut:
+  application:
+    name: long-url-shortener
+
+url:
+  shortner:
+    domain: http://urlshortner.com
+
