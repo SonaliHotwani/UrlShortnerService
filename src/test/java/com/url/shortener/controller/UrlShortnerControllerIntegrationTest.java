@@ -1,6 +1,7 @@
 package com.url.shortener.controller;
 
 import com.url.shortener.model.ShortenedUrlResponse;
+import com.url.shortener.model.UrlActive;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
 class UrlShortnerControllerIntegrationTest {
@@ -45,5 +46,40 @@ class UrlShortnerControllerIntegrationTest {
         } catch (HttpClientResponseException ex) {
             assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
+    }
+
+    @Test
+    void shouldReturnExpiredForUrl() {
+        final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
+        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
+                HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(UrlActive.class)
+        );
+
+        assertEquals(HttpStatus.OK, response.status());
+        assertFalse(response.body().isActive);
+    }
+
+    @Test
+    void shouldReturnActiveForUrl() {
+        final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
+        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
+                HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(UrlActive.class)
+        );
+
+        assertEquals(HttpStatus.OK, response.status());
+        assertTrue(response.body().isActive);
+    }
+
+    @Test
+    void shouldReturnNotFoundIfUrlWasNotCaptured() {
+        final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
+        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
+                HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(UrlActive.class)
+        );
+
+        assertEquals(HttpStatus.NOT_FOUND, response.status());
     }
 }
