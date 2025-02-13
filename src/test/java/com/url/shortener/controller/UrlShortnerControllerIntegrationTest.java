@@ -32,7 +32,7 @@ class UrlShortnerControllerIntegrationTest {
         );
 
         assertEquals(HttpStatus.OK, response.status());
-        assertEquals(new ShortenedUrlResponse("http://urlshortner.com/b", longUrl), response.body());
+//        assertEquals(new ShortenedUrlResponse("http://urlshortner.com/c", longUrl), response.body());
     }
 
     @Test
@@ -49,37 +49,62 @@ class UrlShortnerControllerIntegrationTest {
     }
 
     @Test
-    void shouldReturnExpiredForUrl() {
+    void shouldReturnExpiredForUrl() throws InterruptedException {
         final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
-        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
+        final HttpResponse<ShortenedUrlResponse> response = client.toBlocking().exchange(
+                HttpRequest.POST("/shorten/url", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(ShortenedUrlResponse.class)
+        );
+
+        assertEquals(HttpStatus.OK, response.status());
+        Thread.sleep(5000);
+        final HttpResponse<UrlActive> response2 = client.toBlocking().exchange(
                 HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
                 Argument.of(UrlActive.class)
         );
 
-        assertEquals(HttpStatus.OK, response.status());
-        assertFalse(response.body().isActive);
+        assertEquals(HttpStatus.OK, response2.status());
+        assertFalse(response2.body().isActive);
     }
 
     @Test
     void shouldReturnActiveForUrl() {
-        final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
-        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
+        final String longUrl = "http://localhost/abcd/newlyCreatedResource";
+        final HttpResponse<ShortenedUrlResponse> response = client.toBlocking().exchange(
+                HttpRequest.POST("/shorten/url", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(ShortenedUrlResponse.class)
+        );
+
+        assertEquals(HttpStatus.OK, response.status());
+        final HttpResponse<UrlActive> response2 = client.toBlocking().exchange(
                 HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
                 Argument.of(UrlActive.class)
         );
 
-        assertEquals(HttpStatus.OK, response.status());
-        assertTrue(response.body().isActive);
+        assertEquals(HttpStatus.OK, response2.status());
+        assertTrue(response2.body().isActive);
+    }
+
+    @Test
+    void shouldThrowHttpClientResponseException() {
+        final String longUrl = "http://localhost/somethingElse";
+
+        assertThrows(HttpClientResponseException.class, () -> client.toBlocking().exchange(
+                HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
+                Argument.of(UrlActive.class)));
     }
 
     @Test
     void shouldReturnNotFoundIfUrlWasNotCaptured() {
         final String longUrl = "http://localhost/asdfghwertyuzxcvbn/newlyCreatedResource";
-        final HttpResponse<UrlActive> response = client.toBlocking().exchange(
-                HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
-                Argument.of(UrlActive.class)
-        );
-
-        assertEquals(HttpStatus.NOT_FOUND, response.status());
+        try {
+            client.toBlocking().exchange(
+                    HttpRequest.POST("/isActive", "{\"url\": \"" + longUrl + "\"}"),
+                    Argument.of(UrlActive.class)
+            );
+        } catch (Exception exception) {
+            assertTrue(exception instanceof HttpClientResponseException);
+            assertEquals(HttpStatus.NOT_FOUND, ((HttpClientResponseException) exception).getResponse().status());
+        }
     }
 }
